@@ -1,0 +1,134 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Bell, BellOff, CheckCircle2, Clock3 } from 'lucide-react';
+
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import { formatClockTime, formatCountdown } from '@/lib/time';
+import { getMachineTypeIcon, getMachineTypeLabel, type LiveMachineState } from '@/lib/machine';
+import { useNotificationStore } from '@/stores/notificationStore';
+import type { Machine } from '@/types/machine';
+
+interface MachineCardProps {
+  machine: Machine;
+  live: LiveMachineState;
+}
+
+const ACCENT_BORDER_CLASS: Record<string, string> = {
+  AVAILABLE: 'border-l-emerald-400',
+  RUNNING: 'border-l-sky-400',
+  FINISHED: 'border-l-amber-400',
+  ERROR: 'border-l-rose-400',
+};
+
+export function MachineCard({ machine, live }: MachineCardProps) {
+  const [acknowledged, setAcknowledged] = useState(false);
+
+  // A new cycle started (or the server confirmed completion itself) -
+  // drop any earlier "확인했어요" override so the real status shows again.
+  useEffect(() => {
+    setAcknowledged(false);
+  }, [machine.startedAt, machine.status]);
+
+  const isSubscribed = useNotificationStore((state) => state.isSubscribed(machine.id));
+  const toggleSubscription = useNotificationStore((state) => state.toggleSubscription);
+  const notifyIfDue = useNotificationStore((state) => state.notifyIfDue);
+  const resetNotification = useNotificationStore((state) => state.resetNotification);
+
+  useEffect(() => {
+    if (live.status === 'RUNNING') {
+      notifyIfDue(
+        machine.id,
+        `${getMachineTypeLabel(machine.type)} ${String(machine.machineNumber).padStart(2, '0')}번 종료 5분 전`,
+        live.remainingSeconds,
+      );
+    } else {
+      resetNotification(machine.id);
+    }
+  }, [
+    live.status,
+    live.remainingSeconds,
+    machine.id,
+    machine.type,
+    machine.machineNumber,
+    notifyIfDue,
+    resetNotification,
+  ]);
+
+  const displayStatus = acknowledged ? 'AVAILABLE' : live.status;
+  const typeLabel = getMachineTypeLabel(machine.type);
+  const numberLabel = String(machine.machineNumber).padStart(2, '0');
+  const TypeIcon = getMachineTypeIcon(machine.type);
+
+  return (
+    <article
+      className={`flex flex-col gap-3 rounded-2xl border border-l-4 border-slate-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 ${ACCENT_BORDER_CLASS[displayStatus]} dark:bg-slate-900`}
+    >
+      <header className="flex items-center justify-between">
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
+          <TypeIcon className="h-4 w-4 text-slate-400" aria-hidden="true" />
+          {typeLabel} {numberLabel}
+        </h3>
+        <StatusBadge status={displayStatus} type={machine.type} />
+      </header>
+
+      {displayStatus === 'AVAILABLE' && (
+        <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+          바로 사용할 수 있어요
+        </p>
+      )}
+
+      {displayStatus === 'RUNNING' && (
+        <div className="flex flex-col gap-2">
+          <p className="text-3xl font-extrabold tabular-nums tracking-tight text-sky-600 dark:text-sky-400">
+            {formatCountdown(live.remainingSeconds)}
+          </p>
+          <ProgressBar progress={live.progress} label={`${typeLabel} ${numberLabel} 진행률`} />
+          {live.estimatedEndAt && (
+            <p className="flex items-center gap-1 text-xs text-slate-400">
+              <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+              예상 종료 {formatClockTime(live.estimatedEndAt)}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => toggleSubscription(machine.id)}
+            aria-pressed={isSubscribed}
+            className={`mt-1 inline-flex w-fit items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              isSubscribed
+                ? 'bg-sky-600 text-white hover:bg-sky-700'
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+            }`}
+          >
+            {isSubscribed ? (
+              <Bell className="h-3.5 w-3.5" aria-hidden="true" />
+            ) : (
+              <BellOff className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+            {isSubscribed ? '종료 알림 설정됨' : '종료 알림 받기'}
+          </button>
+        </div>
+      )}
+
+      {displayStatus === 'FINISHED' && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-amber-600 dark:text-amber-400">세탁물을 수거해주세요</p>
+          <button
+            type="button"
+            onClick={() => setAcknowledged(true)}
+            className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-amber-100 px-2.5 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-500/10 dark:text-amber-400"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+            확인했어요
+          </button>
+        </div>
+      )}
+
+      {displayStatus === 'ERROR' && (
+        <p className="text-xs text-rose-500">기기 점검이 필요합니다. 관리자에게 문의해주세요.</p>
+      )}
+    </article>
+  );
+}
