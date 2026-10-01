@@ -11,15 +11,15 @@ export function AuthStatus() {
 
   if (user) {
     return (
-      <div className="flex items-center gap-2 text-xs">
-        <span className="flex items-center gap-1 font-medium text-white">
-          <UserCircle2 className="h-4 w-4" aria-hidden="true" />
-          {user.name}님
+      <div className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs">
+        <span className="flex max-w-[6rem] items-center gap-1 truncate font-medium text-white">
+          <UserCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">{user.name}님</span>
         </span>
         <button
           type="button"
           onClick={logout}
-          className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 font-medium text-white transition-colors hover:bg-white/25"
+          className="flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 font-medium text-white transition-colors hover:bg-white/25"
         >
           <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
           로그아웃
@@ -29,7 +29,7 @@ export function AuthStatus() {
   }
 
   return (
-    <div className="flex items-center gap-2 text-xs font-medium">
+    <div className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xs font-medium">
       <Link
         href="/login"
         className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-white transition-colors hover:bg-white/25"
