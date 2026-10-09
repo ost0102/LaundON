@@ -6,6 +6,7 @@ import {
   requestEmailVerification,
   resetPassword,
   signIn,
+  signOut,
   signUp,
 } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
@@ -42,4 +43,13 @@ export function useFindEmail() {
 
 export function useResetPassword() {
   return useMutation({ mutationFn: resetPassword });
+}
+
+export function useSignOut() {
+  const logout = useAuthStore((state) => state.logout);
+
+  return useMutation({
+    mutationFn: signOut,
+    onSettled: logout,
+  });
 }

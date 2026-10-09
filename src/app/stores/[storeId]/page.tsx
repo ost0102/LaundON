@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Star, WashingMachine, Wind } from 'lucide-react';
+import { ChevronLeft, Sparkles, Star, WashingMachine, Wind } from 'lucide-react';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { FilterBar } from '@/components/machines/FilterBar';
@@ -94,18 +94,27 @@ function StoreDetailContent({ params }: StoreDetailPageProps) {
           <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="truncate">{store?.name ?? '세탁소'}</span>
         </Link>
-        <button
-          type="button"
-          onClick={() => toggleFavorite(storeId)}
-          aria-pressed={isFavorite}
-          aria-label={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
-          className="shrink-0 rounded-full p-1 text-slate-300 transition-colors hover:text-amber-400"
-        >
-          <Star
-            className={`h-5 w-5 ${isFavorite ? 'fill-amber-400 text-amber-400' : ''}`}
-            aria-hidden="true"
-          />
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <Link
+            href={`/ai?storeId=${storeId}`}
+            aria-label="AI 세탁 도우미"
+            className="rounded-full p-1.5 text-slate-400 transition-colors hover:text-sky-500"
+          >
+            <Sparkles className="h-5 w-5" aria-hidden="true" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => toggleFavorite(storeId)}
+            aria-pressed={isFavorite}
+            aria-label={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+            className="rounded-full p-1.5 text-slate-300 transition-colors hover:text-amber-400"
+          >
+            <Star
+              className={`h-5 w-5 ${isFavorite ? 'fill-amber-400 text-amber-400' : ''}`}
+              aria-hidden="true"
+            />
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-col gap-5 px-4">

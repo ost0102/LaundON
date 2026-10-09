@@ -38,3 +38,7 @@ export async function findEmail(input: FindEmailInput) {
 export async function resetPassword(input: ResetPasswordInput) {
   return apiPost<ResetPasswordResponse>('/api/auth/reset-password', input);
 }
+
+export async function signOut() {
+  return apiPost<{ success: true }>('/api/auth/logout', {});
+}

@@ -1,0 +1,217 @@
+// Prisma schema for LaundON.
+// See docs/architecture.md for how these models map to the service layer.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  passwordSalt String
+  role         UserRole @default(USER)
+  createdAt    DateTime @default(now())
+
+  chatSessions ChatSession[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Laundromat / Machine - realtime domain, owned by the IoT service layer.
+// This is the ONLY part of the schema the AI's realtime tools are allowed
+// to read from; it must never be populated via RAG/embeddings.
+// ---------------------------------------------------------------------------
+
+model Laundromat {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  lat       Float?
+  lng       Float?
+  phone     String?
+  isOpen    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  machines     Machine[]
+  programs     LaundryProgram[]
+  chatSessions ChatSession[]
+
+  @@map("laundromats")
+}
+
+enum MachineType {
+  WASHER
+  DRYER
+}
+
+// available | running | completed | maintenance (spec section 3-1)
+enum MachineStatus {
+  AVAILABLE
+  RUNNING
+  COMPLETED
+  MAINTENANCE
+}
+
+model LaundryProgram {
+  id              String      @id @default(cuid())
+  laundromatId    String
+  laundromat      Laundromat  @relation(fields: [laundromatId], references: [id], onDelete: Cascade)
+  machineType     MachineType
+  name            String
+  durationMinutes Int
+  price           Int
+
+  machines Machine[]
+
+  @@index([laundromatId, machineType])
+  @@map("laundry_programs")
+}
+
+model Machine {
+  id             String          @id @default(cuid())
+  laundromatId   String
+  laundromat     Laundromat      @relation(fields: [laundromatId], references: [id], onDelete: Cascade)
+  machineNumber  Int
+  type           MachineType
+  status         MachineStatus   @default(AVAILABLE)
+  programId      String?
+  program        LaundryProgram? @relation(fields: [programId], references: [id])
+  price          Int
+  startedAt      DateTime?
+  estimatedEndAt DateTime?
+  totalSeconds   Int?
+  updatedAt      DateTime        @updatedAt
+
+  statusHistory MachineStatusHistory[]
+
+  @@unique([laundromatId, type, machineNumber])
+  @@map("machines")
+}
+
+model MachineStatusHistory {
+  id        String        @id @default(cuid())
+  machineId String
+  machine   Machine       @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  status    MachineStatus
+  changedAt DateTime      @default(now())
+  note      String?
+
+  @@index([machineId, changedAt])
+  @@map("machine_status_history")
+}
+
+// ---------------------------------------------------------------------------
+// Knowledge base (RAG domain) - static documents, never realtime state.
+// ---------------------------------------------------------------------------
+
+model Document {
+  id        String   @id @default(cuid())
+  title     String
+  category  String
+  content   String
+  sourceUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chunks DocumentChunk[]
+
+  @@map("documents")
+}
+
+model DocumentChunk {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunkIndex Int
+  content    String
+  tokenCount Int?
+  createdAt  DateTime @default(now())
+
+  embedding Embedding?
+
+  @@index([documentId, chunkIndex])
+  @@map("document_chunks")
+}
+
+model Embedding {
+  id        String        @id @default(cuid())
+  chunkId   String        @unique
+  chunk     DocumentChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+  // Plain float array for now (app-side cosine similarity). Swappable for a
+  // native pgvector `vector` column later without touching callers - see
+  // lib/rag/vectorStore.ts.
+  vector    Float[]
+  model     String
+  createdAt DateTime      @default(now())
+
+  @@map("embeddings")
+}
+
+model FAQ {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("faqs")
+}
+
+// ---------------------------------------------------------------------------
+// AI chat logs
+// ---------------------------------------------------------------------------
+
+model ChatSession {
+  id            String      @id @default(cuid())
+  userId        String?
+  user          User?       @relation(fields: [userId], references: [id])
+  laundromatId  String?
+  laundromat    Laundromat? @relation(fields: [laundromatId], references: [id])
+  startedAt     DateTime    @default(now())
+  lastMessageAt DateTime    @updatedAt
+
+  messages ChatMessage[]
+
+  @@map("chat_sessions")
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  TOOL
+}
+
+model ChatMessage {
+  id         String      @id @default(cuid())
+  sessionId  String
+  session    ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role       ChatRole
+  content    String
+  toolName   String?
+  toolCallId String?
+  toolCalls  Json?
+  createdAt  DateTime    @default(now())
+
+  @@index([sessionId, createdAt])
+  @@map("chat_messages")
+}

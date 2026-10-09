@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { getMockMachinesByStore } from '@/mocks/machines';
-import { MOCK_STORES } from '@/mocks/stores';
+import { iotService } from '@/lib/services/iot';
 import { generateNearbyStores } from '@/mocks/virtualStores';
 import { simulateNetworkDelay } from '@/lib/network';
 import type { StoreListResponse } from '@/types/store';
@@ -24,19 +23,6 @@ export async function GET(request: Request) {
     return NextResponse.json<StoreListResponse>({ stores });
   }
 
-  const stores: StoreListResponse['stores'] = MOCK_STORES.map((store) => {
-    const machines = getMockMachinesByStore(store.id);
-    const washers = machines.filter((machine) => machine.type === 'WASHER');
-    const dryers = machines.filter((machine) => machine.type === 'DRYER');
-
-    return {
-      ...store,
-      washerAvailableCount: washers.filter((machine) => machine.status === 'AVAILABLE').length,
-      washerTotalCount: washers.length,
-      dryerAvailableCount: dryers.filter((machine) => machine.status === 'AVAILABLE').length,
-      dryerTotalCount: dryers.length,
-    };
-  });
-
+  const stores = await iotService.listLaundromats();
   return NextResponse.json<StoreListResponse>({ stores });
 }

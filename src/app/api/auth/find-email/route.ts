@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { findMockUsersByName } from '@/mocks/users';
+import { findUsersByName } from '@/lib/services/users';
 import { simulateNetworkDelay } from '@/lib/network';
 import { maskEmail } from '@/lib/validation';
 import type { FindEmailInput, FindEmailResponse } from '@/types/auth';
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: '이름을 입력해주세요.' }, { status: 400 });
   }
 
-  const matches = findMockUsersByName(name);
+  const matches = await findUsersByName(name);
 
   // Covers both "no account" and "multiple accounts share this name" with
   // the same response - revealing the count would leak information about

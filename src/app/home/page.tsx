@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { LocateFixed, MapPin, WashingMachine } from 'lucide-react';
+import Link from 'next/link';
+import { LocateFixed, MapPin, Sparkles, WashingMachine } from 'lucide-react';
 
 import { AuthStatus } from '@/components/auth/AuthStatus';
 import { RequireAuth } from '@/components/auth/RequireAuth';
@@ -58,7 +59,16 @@ function HomeContent() {
             </p>
           </div>
         </div>
-        <AuthStatus />
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/ai"
+            aria-label="AI 세탁 도우미"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
+          >
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <AuthStatus />
+        </div>
       </header>
 
       <div className="px-4 pt-4">

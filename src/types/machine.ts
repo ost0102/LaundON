@@ -1,6 +1,6 @@
 export type MachineType = 'WASHER' | 'DRYER';
 
-export type MachineStatus = 'AVAILABLE' | 'RUNNING' | 'FINISHED' | 'ERROR';
+export type MachineStatus = 'AVAILABLE' | 'RUNNING' | 'COMPLETED' | 'MAINTENANCE';
 
 /**
  * Shape delivered by the IoT server for a single washer/dryer.
@@ -13,6 +13,9 @@ export interface Machine {
   machineNumber: number;
   type: MachineType;
   status: MachineStatus;
+  /** Course name, e.g. "표준" - null for a machine that isn't running. */
+  program: string | null;
+  price: number;
   startedAt: string | null;
   estimatedEndAt: string | null;
   totalDuration: number | null;

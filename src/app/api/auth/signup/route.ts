@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
+import { createSessionToken, SESSION_COOKIE_NAME } from '@/lib/auth/session';
 import { clearVerification, isEmailVerified } from '@/mocks/emailVerification';
-import { createMockUser, findMockUserByEmail } from '@/mocks/users';
+import { createUser, findUserByEmail } from '@/lib/services/users';
 import { simulateNetworkDelay } from '@/lib/network';
 import { isValidEmail, isValidPassword, PASSWORD_RULE_MESSAGE } from '@/lib/validation';
 import type { AuthResponse, SignUpInput } from '@/types/auth';
@@ -31,12 +32,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: '이메일 인증을 완료해주세요.' }, { status: 400 });
   }
 
-  if (findMockUserByEmail(email)) {
+  if (await findUserByEmail(email)) {
     return NextResponse.json({ message: '이미 가입된 이메일입니다.' }, { status: 409 });
   }
 
-  const user = createMockUser(email, password, name);
+  const user = await createUser(email, password, name);
   clearVerification(email);
 
-  return NextResponse.json<AuthResponse>({ user }, { status: 201 });
+  const response = NextResponse.json<AuthResponse>({ user }, { status: 201 });
+  response.cookies.set(SESSION_COOKIE_NAME, createSessionToken(user.id, user.role), {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  return response;
 }

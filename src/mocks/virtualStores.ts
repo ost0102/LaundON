@@ -31,6 +31,8 @@ function buildCellId(coords: Coordinates): string {
   return `${roundCoord(coords.lat)}_${roundCoord(coords.lng)}`;
 }
 
+const STANDARD_PROGRAM = { name: '표준', washerPrice: 4000, dryerPrice: 1000 };
+
 /** Deterministic machine mix so the same virtual store always generates the same lineup. */
 function generateMachineSeedsForStore(storeId: string): MachineSeed[] {
   const rand = createSeededRandom(`machines:${storeId}`);
@@ -40,16 +42,17 @@ function generateMachineSeedsForStore(storeId: string): MachineSeed[] {
   const STATUS_OPTIONS: { value: MachineStatus; weight: number }[] = [
     { value: 'AVAILABLE', weight: 0.4 },
     { value: 'RUNNING', weight: 0.45 },
-    { value: 'FINISHED', weight: 0.08 },
-    { value: 'ERROR', weight: 0.07 },
+    { value: 'COMPLETED', weight: 0.08 },
+    { value: 'MAINTENANCE', weight: 0.07 },
   ];
 
   function buildOne(type: MachineType, machineNumber: number): MachineSeed {
     const status = pickWeighted(rand, STATUS_OPTIONS);
     const totalDurationBase = type === 'WASHER' ? 35 * 60 : 40 * 60;
-    const totalDuration = status === 'RUNNING' || status === 'FINISHED' ? totalDurationBase : null;
+    const totalDuration = status === 'RUNNING' || status === 'COMPLETED' ? totalDurationBase : null;
     const elapsedSecondsAtBoot = status === 'RUNNING' ? Math.floor(rand() * (totalDurationBase - 60)) : 0;
     const suffix = String(machineNumber).padStart(2, '0');
+    const price = type === 'WASHER' ? STANDARD_PROGRAM.washerPrice : STANDARD_PROGRAM.dryerPrice;
 
     return {
       id: `${storeId}__${type.toLowerCase()}-${suffix}`,
@@ -57,6 +60,8 @@ function generateMachineSeedsForStore(storeId: string): MachineSeed[] {
       machineNumber,
       type,
       status,
+      program: status === 'RUNNING' ? STANDARD_PROGRAM.name : null,
+      price,
       elapsedSecondsAtBoot,
       totalDuration,
     };

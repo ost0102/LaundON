@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { clearVerification, confirmVerificationCode } from '@/mocks/emailVerification';
-import { findMockUserByEmail, updateMockUserPassword } from '@/mocks/users';
+import { findUserByEmail, updateUserPassword } from '@/lib/services/users';
 import { simulateNetworkDelay } from '@/lib/network';
 import { isValidPassword, PASSWORD_RULE_MESSAGE } from '@/lib/validation';
 import type { ResetPasswordInput, ResetPasswordResponse } from '@/types/auth';
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: PASSWORD_RULE_MESSAGE }, { status: 400 });
   }
 
-  if (!findMockUserByEmail(email)) {
+  if (!(await findUserByEmail(email))) {
     return NextResponse.json({ message: '가입되지 않은 이메일입니다.' }, { status: 404 });
   }
 
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: result.message }, { status: 400 });
   }
 
-  updateMockUserPassword(email, newPassword);
+  await updateUserPassword(email, newPassword);
   clearVerification(email);
 
   return NextResponse.json<ResetPasswordResponse>({ success: true });

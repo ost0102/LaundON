@@ -36,7 +36,7 @@ export function computeLiveState(machine: Machine, now: number): LiveMachineStat
       totalDuration > 0 ? Math.min(100, Math.max(0, Math.round((elapsed / totalDuration) * 100))) : 100;
 
     return {
-      status: remainingSeconds <= 0 ? 'FINISHED' : 'RUNNING',
+      status: remainingSeconds <= 0 ? 'COMPLETED' : 'RUNNING',
       remainingSeconds,
       progress,
       estimatedEndAt: machine.estimatedEndAt,
@@ -53,9 +53,9 @@ export function computeLiveState(machine: Machine, now: number): LiveMachineStat
 
 export const STATUS_PRIORITY: Record<MachineStatus, number> = {
   AVAILABLE: 0,
-  FINISHED: 1,
+  COMPLETED: 1,
   RUNNING: 2,
-  ERROR: 3,
+  MAINTENANCE: 3,
 };
 
 interface StatusMeta {
@@ -85,7 +85,7 @@ export function getStatusMeta(status: MachineStatus, type: MachineType): StatusM
         badgeClassName: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400',
         iconClassName: 'text-sky-500',
       };
-    case 'FINISHED':
+    case 'COMPLETED':
       return {
         label: '사용 완료',
         icon: PackageCheck,
@@ -93,9 +93,9 @@ export function getStatusMeta(status: MachineStatus, type: MachineType): StatusM
         badgeClassName: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
         iconClassName: 'text-amber-500',
       };
-    case 'ERROR':
+    case 'MAINTENANCE':
       return {
-        label: '점검 필요',
+        label: '점검 중',
         icon: AlertTriangle,
         spin: false,
         badgeClassName: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400',

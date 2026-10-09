@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { findMockStore } from '@/mocks/stores';
+import { iotService } from '@/lib/services/iot';
 import { findVirtualStore, isVirtualStoreId } from '@/mocks/virtualStores';
 import { simulateNetworkDelay } from '@/lib/network';
 import type { StoreDetailResponse } from '@/types/store';
@@ -14,7 +14,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
   const store = isVirtualStoreId(params.storeId)
     ? findVirtualStore(params.storeId)
-    : findMockStore(params.storeId);
+    : await iotService.getLaundromat(params.storeId);
 
   if (!store) {
     return NextResponse.json({ message: '세탁소를 찾을 수 없습니다.' }, { status: 404 });

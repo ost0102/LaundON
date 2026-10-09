@@ -18,8 +18,8 @@ interface MachineCardProps {
 const ACCENT_BORDER_CLASS: Record<string, string> = {
   AVAILABLE: 'border-l-emerald-400',
   RUNNING: 'border-l-sky-400',
-  FINISHED: 'border-l-amber-400',
-  ERROR: 'border-l-rose-400',
+  COMPLETED: 'border-l-amber-400',
+  MAINTENANCE: 'border-l-rose-400',
 };
 
 export function MachineCard({ machine, live }: MachineCardProps) {
@@ -74,14 +74,18 @@ export function MachineCard({ machine, live }: MachineCardProps) {
       </header>
 
       {displayStatus === 'AVAILABLE' && (
-        <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-          바로 사용할 수 있어요
-        </p>
+        <div className="flex items-center justify-between gap-1.5">
+          <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+            바로 사용할 수 있어요
+          </p>
+          <p className="text-xs text-slate-400">{machine.price.toLocaleString()}원</p>
+        </div>
       )}
 
       {displayStatus === 'RUNNING' && (
         <div className="flex flex-col gap-2">
+          {machine.program && <p className="text-xs text-slate-400">{machine.program} 코스</p>}
           <p className="text-3xl font-extrabold tabular-nums tracking-tight text-sky-600 dark:text-sky-400">
             {formatCountdown(live.remainingSeconds)}
           </p>
@@ -112,7 +116,7 @@ export function MachineCard({ machine, live }: MachineCardProps) {
         </div>
       )}
 
-      {displayStatus === 'FINISHED' && (
+      {displayStatus === 'COMPLETED' && (
         <div className="flex flex-col gap-2">
           <p className="text-xs text-amber-600 dark:text-amber-400">세탁물을 수거해주세요</p>
           <button
@@ -126,7 +130,7 @@ export function MachineCard({ machine, live }: MachineCardProps) {
         </div>
       )}
 
-      {displayStatus === 'ERROR' && (
+      {displayStatus === 'MAINTENANCE' && (
         <p className="text-xs text-rose-500">기기 점검이 필요합니다. 관리자에게 문의해주세요.</p>
       )}
     </article>
