@@ -166,6 +166,14 @@ export class PrismaIotService implements IotService {
     if (!machine) throw new MachineNotFoundError(id);
     if (machine.status !== 'RUNNING') throw new MachineNotRunningError(id);
 
+    // Reset to the cheapest program's price - otherwise an AVAILABLE machine
+    // would keep displaying whatever price its last (possibly pricier) run
+    // charged, instead of its actual starting price.
+    const defaultProgram = await prisma.laundryProgram.findFirst({
+      where: { laundromatId: machine.laundromatId, machineType: machine.type },
+      orderBy: { price: 'asc' },
+    });
+
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.machine.update({
         where: { id },
@@ -175,6 +183,7 @@ export class PrismaIotService implements IotService {
           startedAt: null,
           estimatedEndAt: null,
           totalSeconds: null,
+          price: defaultProgram?.price ?? machine.price,
         },
         include: MACHINE_INCLUDE,
       });
